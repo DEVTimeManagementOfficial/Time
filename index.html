@@ -1,0 +1,441 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.17.4/xlsx.full.min.js"></script>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Time Management</title>
+    <style>
+        /* Custom CSS styles for mobile-like display */
+        body {
+            font-family: 'Arial', sans-serif;
+            margin: 0;
+            padding: 0;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            background: linear-gradient(135deg, #e0f7fa, #b3e5fc);
+        }
+        .mobile-container {
+            width: 360px;
+            height: 640px;
+            background-color: #fff;
+            border-radius: 20px;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+            overflow: hidden;
+            position: relative;
+        }
+        .container {
+            padding: 20px;
+            text-align: center;
+            height: 100%;
+            overflow-y: auto;
+        }
+        h1, h2 {
+            color: #333;
+            font-family: 'Pacifico', cursive;
+            margin-bottom: 20px;
+        }
+        .btn {
+            padding: 10px 20px;
+            font-size: 1em;
+            border: none;
+            border-radius: 25px;
+            cursor: pointer;
+            transition: background-color 0.3s ease, transform 0.3s ease;
+            background-color: #0277bd;
+            color: #fff;
+            display: inline-block;
+            margin: 5px 0;
+        }
+        .btn:hover {
+            background-color: #01579b;
+            transform: scale(1.05);
+        }
+        .form-input {
+            margin-top: 10px;
+            padding: 10px 15px;
+            font-size: 1em;
+            border: 1px solid #ccc;
+            border-radius: 25px;
+            width: calc(100% - 30px);
+            box-sizing: border-box;
+        }
+        .auth-section, .task-box {
+            margin-top: 30px;
+            text-align: center;
+            color: #333;
+        }
+        .auth-section p {
+            margin-top: 10px;
+            color: #666;
+        }
+        .auth-section a {
+            color: #0277bd;
+            text-decoration: none;
+        }
+        .auth-section a:hover {
+            text-decoration: underline;
+        }
+        .task {
+            margin-bottom: 20px;
+            background-color: #e3f2fd;
+            padding: 15px;
+            border-radius: 10px;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+        }
+        .tick-mark {
+            display: none;
+            color: green;
+        }
+        #download-excel-btn {
+            margin-top: 20px;
+            display: none;
+        }
+        #error-page {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.8);
+            color: #fff;
+            text-align: center;
+            padding-top: 20%;
+            z-index: 100;
+        }
+        #error-page h1 {
+            font-size: 3em;
+        }
+        .modal {
+            display: none;
+            position: fixed;
+            z-index: 1000;
+            left: 0;
+            top: 0;
+            width: 100%;
+            height: 100%;
+            overflow: auto;
+            background-color: rgba(0,0,0,0.4);
+        }
+        .modal-content {
+            background-color: #fefefe;
+            margin: 15% auto;
+            padding: 20px;
+            border: 1px solid #888;
+            width: 80%;
+            border-radius: 10px;
+        }
+        .close {
+            color: #aaa;
+            float: right;
+            font-size: 28px;
+            font-weight: bold;
+        }
+        .close:hover,
+        .close:focus {
+            color: black;
+            text-decoration: none;
+            cursor: pointer;
+        }
+        #version {
+            position: absolute;
+            top: 10px;
+            right: 10px;
+            color: #333;
+        }
+        #update-option {
+            color: #333;
+            cursor: pointer;
+        }
+        #update-option:hover {
+            color: #ff0000;
+        }
+        #color-picker {
+            margin-top: 20px;
+        }
+        .form-input::placeholder {
+            color: #aaa;
+        }
+        .form-input:focus {
+            outline: none;
+            border-color: #0277bd;
+            box-shadow: 0 0 5px rgba(2, 119, 189, 0.5);
+        }
+        .container:before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(135deg, #81d4fa, #b3e5fc);
+            z-index: -1;
+            border-radius: 10px;
+            filter: blur(10px);
+        }
+
+        /* Mobile styles */
+        @media (max-width: 600px) {
+            .container {
+                padding: 15px;
+            }
+            h1, h2 {
+                font-size: 1.5em;
+            }
+            .btn {
+                padding: 8px 16px;
+                font-size: 0.9em;
+            }
+            .form-input {
+                padding: 8px 12px;
+                font-size: 0.9em;
+            }
+            #version {
+                font-size: 0.8em;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="mobile-container">
+        <div class="container">
+            <h1>Time Management App</h1>
+            <div id="version">v1.0 <span id="update-option">Beta</span></div>
+            <div class="auth-section" id="auth-section">
+                <h2>Log In</h2>
+                <form id="signin-form">
+                    <input type="text" placeholder="Username" id="username" class="form-input" required>
+                    <br><br>
+                    <input type="password" placeholder="Password" id="password" class="form-input" required>
+                    <br><br>
+                    <button type="submit" class="btn">Log In</button>
+                </form>
+            </div>
+            <div class="task-box" id="task-box" style="display: none;">
+                <h2 id="greeting"></h2>
+                <div id="clock" class="clock"></div>
+                <div id="tasks-container"></div>
+                <br><br>
+                <button id="add-task-btn" class="btn" onclick="addTask()">Add Task</button>
+            </div>
+            <div id="download-excel-btn">
+                <button id="download-btn" class="btn" onclick="downloadExcel()">Download Website Details</button>
+            </div>
+            <div id="error-page">
+                <h1>Error Occurred</h1>
+                <p id="error-message">Something went wrong. The website will close in 5 seconds.</p>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let taskId = 1;
+        let currentUser = null;
+        let websiteDetails = [];
+        let isAdmin = false;
+        let countdownIntervals = {};
+        let messages = [];
+
+        const apiUrl = 'https://jsonplaceholder.typicode.com/posts';
+
+        document.getElementById('signin-form').addEventListener('submit', function (event) {
+            event.preventDefault();
+            const username = document.getElementById('username').value;
+            const password = document.getElementById('password').value;
+
+            if (username === 'admin' && password === 'admin1029') {
+                isAdmin = true;
+                currentUser = username;
+                alert("Login Successful!");
+                document.getElementById('auth-section').style.display = 'none';
+                document.getElementById('task-box').style.display = 'none';
+                document.getElementById('download-excel-btn').style.display = 'block';
+                greetUser();
+            } else {
+                isAdmin = false;
+                currentUser = username;
+                alert("Login Successful!");
+                document.getElementById('auth-section').style.display = 'none';
+                document.getElementById('task-box').style.display = 'block';
+                greetUser();
+            }
+
+            const taskColor = document.getElementById('task-color').value;
+            document.body.style.backgroundColor = taskColor;
+        });
+
+        function greetUser() {
+            const greetingElement = document.getElementById('greeting');
+            const clockElement = document.getElementById('clock');
+            const currentTime = new Date();
+            const hours = currentTime.getHours();
+            let greeting;
+
+            if (hours < 12) {
+                greeting = 'Good Morning';
+            } else if (hours < 18) {
+                greeting = 'Good Afternoon';
+            } else {
+                greeting = 'Good Evening';
+            }
+
+            greetingElement.textContent = `${greeting}, ${currentUser}!`;
+            clockElement.textContent = currentTime.toLocaleTimeString();
+            setInterval(() => {
+                clockElement.textContent = new Date().toLocaleTimeString();
+            }, 1000);
+
+            fetchWebsiteDetails();
+        }
+
+        function fetchWebsiteDetails() {
+            if (isAdmin) {
+                fetch(apiUrl)
+                    .then(response => response.json())
+                    .then(data => {
+                        websiteDetails = data.slice(0, 5).map(item => [
+                            item.title, item.body, currentUser, '2024-01-01', `${currentUser}@example.com`
+                        ]);
+                    })
+                    .catch(error => {
+                        console.error('Error fetching website details:', error);
+                        showErrorPage('Failed to fetch website details.');
+                    });
+            }
+        }
+
+        function addTask() {
+            const tasksContainer = document.getElementById('tasks-container');
+            const taskBox = document.createElement('div');
+            taskBox.classList.add('task');
+            taskBox.id = `task-${taskId}`;
+            taskBox.innerHTML = `
+                <input type="text" placeholder="Enter your task" class="form-input">
+                <br><br>
+                <input type="time" class="form-input">
+                <br><br>
+                <button class="btn" onclick="toggleTaskCompletion(${taskId})">Start Task</button>
+                <br><br>
+                <div class="due-date" id="countdown-${taskId}"></div>
+                <div class="tick-mark" id="tick-${taskId}">✔</div>
+            `;
+            tasksContainer.appendChild(taskBox);
+            taskId++;
+        }
+
+        function toggleTaskCompletion(taskId) {
+            const taskButton = document.getElementById(`task-${taskId}`).querySelector('button');
+            const countdownElement = document.getElementById(`countdown-${taskId}`);
+            const tickMark = document.getElementById(`tick-${taskId}`);
+            const isTaskCompleted = taskButton.textContent === 'End Task';
+
+            if (isTaskCompleted) {
+                countdownElement.textContent = 'Task completed!';
+                clearInterval(countdownIntervals[taskId]);
+                tickMark.style.display = 'block';
+            } else {
+                taskButton.textContent = 'End Task';
+                startCountdown(taskId);
+            }
+        }
+
+        function startCountdown(taskId) {
+            const taskTimeInput = document.getElementById(`task-${taskId}`).querySelector('input[type="time"]');
+            const taskTime = taskTimeInput.value;
+            if (!taskTime) return;
+
+            const [hours, minutes] = taskTime.split(':');
+            let endTime = new Date();
+            endTime.setHours(parseInt(hours));
+            endTime.setMinutes(parseInt(minutes));
+
+            const countdownElement = document.getElementById(`countdown-${taskId}`);
+            countdownIntervals[taskId] = setInterval(updateCountdown, 1000);
+
+            function updateCountdown() {
+                const now = new Date();
+                let remainingTime = endTime - now;
+                let hours = Math.floor((remainingTime % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
+                let minutes = Math.floor((remainingTime % (1000 * 60 * 60)) / (1000 * 60));
+                let seconds = Math.floor((remainingTime % (1000 * 60)) / 1000);
+
+                if (remainingTime <= 0) {
+                    clearInterval(countdownIntervals[taskId]);
+                    countdownElement.textContent = 'Task completed!';
+                    const tickMark = document.getElementById(`tick-${taskId}`);
+                    tickMark.style.display = 'block';
+                } else {
+                    countdownElement.textContent = `Time left: ${hours} hour(s) ${minutes} minute(s) ${seconds} second(s)`;
+                }
+            }
+        }
+
+        function downloadExcel() {
+            if (websiteDetails.length > 0) {
+                const data = [
+                    ['Username', 'Password', 'Full Name', 'Date of Birth', 'Email'],
+                    ...websiteDetails
+                ];
+
+                const workbook = XLSX.utils.book_new();
+                const worksheet = XLSX.utils.aoa_to_sheet(data);
+                XLSX.utils.book_append_sheet(workbook, worksheet, 'Website Details');
+
+                const excelBuffer = XLSX.write(workbook, { bookType: 'xlsx', type: 'array' });
+                const excelBlob = new Blob([excelBuffer], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
+                const excelUrl = URL.createObjectURL(excelBlob);
+
+                const downloadLink = document.createElement('a');
+                downloadLink.href = excelUrl;
+                downloadLink.download = 'website_details.xlsx';
+
+                document.body.appendChild(downloadLink);
+                downloadLink.click();
+                document.body.removeChild(downloadLink);
+            } else {
+                alert("No website details to download.");
+            }
+        }
+
+        function showErrorPage(message) {
+            const errorPage = document.getElementById('error-page');
+            const errorMessage = document.getElementById('error-message');
+            errorMessage.textContent = message;
+            errorPage.style.display = 'block';
+            setTimeout(() => {
+                window.close();
+            }, 5000);
+        }
+
+        document.getElementById('update-option').addEventListener('click', function () {
+            alert('Check for updates...');
+            setTimeout(updatePage, 2000);
+        });
+
+        function updatePage() {
+            if (confirm('Update found. Do you want to update now?')) {
+                const updateProgress = document.createElement('div');
+                updateProgress.textContent = 'Updating... 0%';
+                document.body.appendChild(updateProgress);
+
+                let percent = 0;
+                const interval = setInterval(() => {
+                    percent += 5;
+                    updateProgress.textContent = `Updating... ${percent}%`;
+                    if (percent >= 100) {
+                        clearInterval(interval);
+                        alert('Update complete!');
+                        document.body.removeChild(updateProgress);
+                        document.getElementById('version').textContent = 'v1.01 Beta';
+                    }
+                }, 900);
+            }
+        }
+    </script>
+</body>
+</html>
+
+     
